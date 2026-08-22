@@ -2,46 +2,47 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Voice Word Chain Game</title>
   <style>
-    body { font-family: sans-serif; text-align: center; margin-top: 50px; background: #f4f4f9; }
+    body { font-family: sans-serif; text-align: center; margin-top: 30px; background: #f4f4f9; padding: 15px; }
     #status { font-weight: bold; margin: 20px; font-size: 1.2rem; color: #333; }
     #round { font-size: 1rem; color: #666; margin-bottom: 10px; }
-    #log { max-width: 400px; margin: auto; text-align: left; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-height: 300px; overflow-y: auto; }
-    button { padding: 12px 24px; font-size: 1rem; cursor: pointer; border: none; background: #007bff; color: white; border-radius: 5px; }
+    #log { max-width: 100%; margin: auto; text-align: left; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto; }
+    button { padding: 15px 30px; font-size: 1.2rem; cursor: pointer; border: none; background: #007bff; color: white; border-radius: 8px; width: 100%; max-width: 300px; }
   </style>
 </head>
 <body>
 
   <h1>Voice Word Chain Game</h1>
   <div id="round">Round: 0 / 10</div>
-  <button onclick="startGame()">Start Game</button>
-  <div id="status">Press "Start Game" to begin.</div>
+  <button id="startBtn" onclick="startGame()">Start Game</button>
+  <div id="status">Tap "Start Game" to begin.</div>
   <div id="log"></div>
 
   <script>
     const dictionary = {
-      'a': ['apple', 'ant', 'anchor', 'alligator', 'airplane', 'arrow', 'artist', 'avocado'],
-      'b': ['bear', 'ball', 'banana', 'boat', 'bird', 'book', 'bell', 'bus'],
-      'c': ['cat', 'car', 'cake', 'cup', 'cow', 'clock', 'coin', 'camel'],
-      'd': ['dog', 'duck', 'door', 'drum', 'desk', 'deer', 'dragon', 'dolphin'],
-      'e': ['elephant', 'eagle', 'egg', 'engine', 'earth', 'elk', 'elbow'],
-      'f': ['fish', 'frog', 'fox', 'flag', 'flower', 'feather', 'fire', 'forest'],
-      'g': ['giraffe', 'gold', 'goose', 'grape', 'guitar', 'garden', 'goat'],
-      'h': ['horse', 'hat', 'house', 'hammer', 'heart', 'hippo', 'honey'],
-      'i': ['ice', 'igloo', 'island', 'ink', 'iron', 'ivy'],
-      'k': ['kite', 'king', 'koala', 'kangaroo', 'key', 'kiwi'],
-      'l': ['lion', 'leaf', 'lemon', 'lamp', 'lizard', 'lock'],
-      'm': ['monkey', 'moon', 'mouse', 'milk', 'mountain', 'map'],
-      'n': ['nest', 'night', 'needle', 'nut', 'net', 'note'],
-      'o': ['owl', 'orange', 'octopus', 'ocean', 'ostrich', 'onion'],
-      'p': ['panda', 'pen', 'pizza', 'pig', 'penguin', 'pear'],
-      'r': ['rabbit', 'robot', 'ring', 'rose', 'river', 'rocket'],
-      's': ['snake', 'sun', 'star', 'ship', 'spider', 'spoon'],
-      't': ['tiger', 'ten', 'tree', 'turtle', 'train', 'table', 'telephone'],
-      'u': ['umbrella', 'unicorn', 'uncle'],
-      'w': ['whale', 'wolf', 'window', 'watch', 'water'],
-      'y': ['yak', 'yellow', 'yacht', 'yo-yo']
+      'a': ['apple', 'ant', 'anchor', 'airplane'],
+      'b': ['bear', 'ball', 'banana', 'boat'],
+      'c': ['cat', 'car', 'cake', 'cup'],
+      'd': ['dog', 'duck', 'door', 'drum'],
+      'e': ['elephant', 'eagle', 'egg', 'engine'],
+      'f': ['fish', 'frog', 'fox', 'flag'],
+      'g': ['giraffe', 'gold', 'goose', 'grape'],
+      'h': ['horse', 'hat', 'house', 'hammer'],
+      'i': ['ice', 'igloo', 'island'],
+      'k': ['kite', 'king', 'koala'],
+      'l': ['lion', 'leaf', 'lemon'],
+      'm': ['monkey', 'moon', 'mouse'],
+      'n': ['nest', 'night', 'needle', 'nut'],
+      'o': ['owl', 'orange', 'octopus'],
+      'p': ['panda', 'pen', 'pizza'],
+      'r': ['rabbit', 'robot', 'ring'],
+      's': ['snake', 'sun', 'star'],
+      't': ['tiger', 'ten', 'tree', 'turtle'],
+      'u': ['umbrella', 'unicorn'],
+      'w': ['whale', 'wolf', 'window'],
+      'y': ['yak', 'yellow']
     };
 
     let usedWords = new Set();
@@ -59,15 +60,12 @@
     if (SpeechRecognition) {
       recognition = new SpeechRecognition();
       recognition.lang = 'en-US';
-      recognition.continuous = true; // Keeps microphone listening continuously
+      recognition.continuous = false; // Works more reliably across mobile browsers
       recognition.interimResults = false;
 
       recognition.onresult = (event) => {
         if (!isGameActive) return;
-
-        const lastIndex = event.results.length - 1;
-        const spokenWord = event.results[lastIndex][0].transcript.toLowerCase().trim().replace(/[^a-z]/g, '');
-        
+        const spokenWord = event.results[0][0].transcript.toLowerCase().trim().replace(/[^a-z]/g, '');
         if (spokenWord) {
           document.getElementById('status').innerText = `You said: "${spokenWord}"`;
           processPlayerTurn(spokenWord);
@@ -75,16 +73,38 @@
       };
 
       recognition.onerror = (event) => {
-        console.log("Speech recognition error:", event.error);
+        if (isGameActive && event.error !== 'no-speech') {
+          document.getElementById('status').innerText = "Listening... speak now!";
+          setTimeout(startListening, 1000);
+        }
+      };
+
+      recognition.onend = () => {
+        // Automatically restart listening if game is active and computer is not talking
+        if (isGameActive && !synth.speaking) {
+          startListening();
+        }
       };
     } else {
-      alert("Please open this file in Google Chrome.");
+      alert("Speech recognition is not supported on this mobile browser. Try Chrome on Android or Safari on iOS.");
+    }
+
+    function startListening() {
+      try {
+        recognition.start();
+        document.getElementById('status').innerText = "Listening... Speak your word!";
+      } catch(e) {}
     }
 
     function speak(text, callback) {
-      synth.cancel(); // Stop any previous speech
+      try { recognition.stop(); } catch(e) {} // Pause listening while speaking
+      synth.cancel();
+
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.onend = () => { if (callback) callback(); };
+      utterance.onend = () => {
+        if (callback) callback();
+        if (isGameActive) startListening(); // Resume listening after speaking stops
+      };
       synth.speak(utterance);
     }
 
@@ -106,10 +126,7 @@
       isGameActive = true;
       
       document.getElementById('log').innerHTML = '';
-      updateTurnUI();
-
-      try { recognition.start(); } catch(e) {}
-
+      
       const startWord = "elephant";
       usedWords.add(startWord);
       currentLastLetter = startWord.slice(-1);
@@ -118,25 +135,22 @@
       updateTurnUI();
 
       log(`Computer (1): <b>${startWord}</b>`);
-      speak(`Game started! I go first with ${startWord}. Your letter is ${currentLastLetter}.`);
+      speak(`Game started! I start with ${startWord}. Your letter is ${currentLastLetter}.`);
     }
 
     function processPlayerTurn(word) {
       if (!isGameActive) return;
 
-      // Validate first letter
       if (word.charAt(0) !== currentLastLetter) {
         speak(`No, ${word} does not start with ${currentLastLetter}. Try again.`);
         return;
       }
 
-      // Validate duplicate
       if (usedWords.has(word)) {
         speak(`${word} was already used. Try a different word.`);
         return;
       }
 
-      // Valid player turn
       usedWords.add(word);
       playerScore++;
       totalTurns++;
@@ -145,13 +159,12 @@
 
       if (checkGameOver()) return;
 
-      // Computer turn setup
       const playerLastLetter = word.slice(-1);
       const options = dictionary[playerLastLetter] || [];
       const availableOptions = options.filter(w => !usedWords.has(w));
 
       if (availableOptions.length === 0) {
-        speak(`I have no more words starting with ${playerLastLetter}. You win this round!`);
+        speak(`I have no more words starting with ${playerLastLetter}. You win!`);
         endGame("You Win! Computer ran out of words.");
         return;
       }
@@ -174,14 +187,7 @@
 
     function checkGameOver() {
       if (totalTurns >= MAX_TURNS) {
-        let resultMsg = "";
-        if (playerScore > computerScore) {
-          resultMsg = "Game over! You win!";
-        } else if (computerScore > playerScore) {
-          resultMsg = "Game over! Computer wins!";
-        } else {
-          resultMsg = "Game over! It's a tie!";
-        }
+        let resultMsg = playerScore >= computerScore ? "Game over! You win!" : "Game over! Computer wins!";
         endGame(resultMsg);
         return true;
       }
