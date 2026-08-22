@@ -3,21 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>USJ 21</title>
+  <title>Voice Word Chain Game</title>
   <style>
     body { font-family: sans-serif; text-align: center; margin-top: 20px; background: #f4f4f9; padding: 15px; }
-    #status { font-weight: bold; margin: 15px; font-size: 1.2rem; color: #007bff; min-height: 30px; }
+    #status { font-weight: bold; margin: 15px; font-size: 1.2rem; color: #007bff; min-height: 40px; }
     #round { font-size: 1rem; color: #666; margin-bottom: 10px; }
-    #log { max-width: 100%; margin: auto; text-align: left; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto; }
-    button { padding: 15px 30px; font-size: 1.2rem; cursor: pointer; border: none; background: #28a745; color: white; border-radius: 8px; width: 100%; max-width: 300px; margin-bottom: 10px; }
+    #log { max-width: 100%; margin: auto; text-align: left; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-height: 220px; overflow-y: auto; }
+    .btn { padding: 16px 20px; font-size: 1.2rem; cursor: pointer; border: none; border-radius: 8px; width: 100%; max-width: 320px; margin: 8px 0; font-weight: bold; }
+    #startBtn { background: #28a745; color: white; }
+    #talkBtn { background: #007bff; color: white; display: none; }
   </style>
 </head>
 <body>
 
-  <h1>USJ21</h1>
+  <h1>Voice Word Chain Game</h1>
   <div id="round">Round: 0 / 10</div>
-  <button id="startBtn" onclick="startGame()">Start Game</button>
-  <div id="status">Tap "Start Game" to begin.</div>
+  <button id="startBtn" class="btn" onclick="startGame()">Start New Game</button>
+  <button id="talkBtn" class="btn" onclick="startListening()">🎤 Tap & Speak Your Word</button>
+  <div id="status">Tap "Start New Game" to begin.</div>
   <div id="log"></div>
 
   <script>
@@ -28,14 +31,14 @@
       'd': ['dog', 'duck', 'door', 'drum', 'dolphin'],
       'e': ['elephant', 'eagle', 'egg', 'engine'],
       'f': ['fish', 'frog', 'fox', 'flag', 'forest'],
-      'g': ['giraffe', 'gold', 'goose', 'grape', 'guitar'],
+      'g': ['giraffe', 'gold', 'goose', 'grape', 'guitar', 'great'],
       'h': ['horse', 'hat', 'house', 'hammer', 'hippo'],
       'i': ['ice', 'igloo', 'island', 'iron'],
       'k': ['kite', 'king', 'koala', 'kangaroo'],
       'l': ['lion', 'leaf', 'lemon', 'lizard'],
       'm': ['monkey', 'moon', 'mouse', 'mountain'],
       'n': ['nest', 'night', 'needle', 'nut'],
-      'o': ['owl', 'orange', 'octopus', 'ocean'],
+      'o': ['owl', 'orange', 'octopus', 'ocean', 'over'],
       'p': ['panda', 'pen', 'pizza', 'penguin'],
       'r': ['rabbit', 'robot', 'ring', 'rocket'],
       's': ['snake', 'sun', 'star', 'spider'],
@@ -66,28 +69,28 @@
       recognition.onresult = (event) => {
         if (!isGameActive) return;
         
-        // Grab the most confident spoken phrase
-        const rawTranscript = event.results[0][0].transcript.toLowerCase().trim();
-        // Take only the last spoken word if background noise added extra sounds
-        const wordsArray = rawTranscript.split(" ");
-        const spokenWord = wordsArray[wordsArray.length - 1].replace(/[^a-z]/g, '');
+        const rawPhrase = event.results[0][0].transcript.toLowerCase().trim();
+        document.getElementById('status').innerText = `I heard: "${rawPhrase}"`;
+        
+        // Find the valid word in the phrase that starts with the required letter
+        const words = rawPhrase.replace(/[^a-z\s]/g, '').split(/\s+/);
+        let foundWord = words.find(w => w.charAt(0) === currentLastLetter);
 
-        if (spokenWord) {
-          document.getElementById('status').innerText = `I heard: "${spokenWord}"`;
-          processPlayerTurn(spokenWord);
+        // Fallback to the last spoken word if no match found
+        if (!foundWord && words.length > 0) {
+          foundWord = words[words.length - 1];
+        }
+
+        if (foundWord) {
+          processPlayerTurn(foundWord);
+        } else {
+          speak("I didn't hear a word. Tap the button and try again.");
         }
       };
 
-      recognition.onerror = (event) => {
-        if (isGameActive && event.error !== 'no-speech') {
-          document.getElementById('status').innerText = "Listening... speak clearly!";
-          setTimeout(startListening, 1200);
-        }
-      };
-
-      recognition.onend = () => {
-        if (isGameActive && !synth.speaking) {
-          startListening();
+      recognition.onerror = () => {
+        if (isGameActive) {
+          document.getElementById('status').innerText = "Didn't catch that. Tap 'Tap & Speak' to try again.";
         }
       };
     } else {
@@ -95,21 +98,18 @@
     }
 
     function startListening() {
+      if (!isGameActive) return;
+      synth.cancel();
       try {
         recognition.start();
-        document.getElementById('status').innerText = "🎤 Listening... Say your word!";
+        document.getElementById('status').innerText = "🎤 Listening... Say your word now!";
       } catch(e) {}
     }
 
     function speak(text, callback) {
-      try { recognition.stop(); } catch(e) {}
       synth.cancel();
-
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.onend = () => {
-        if (callback) callback();
-        if (isGameActive) startListening();
-      };
+      utterance.onend = () => { if (callback) callback(); };
       synth.speak(utterance);
     }
 
@@ -138,8 +138,8 @@
       isGameActive = true;
       
       document.getElementById('log').innerHTML = '';
+      document.getElementById('talkBtn').style.display = 'inline-block';
       
-      // Select random starting word
       const startWord = getRandomStartWord();
       usedWords.add(startWord);
       currentLastLetter = startWord.slice(-1);
@@ -148,19 +148,19 @@
       updateTurnUI();
 
       log(`Computer (1): <b>${startWord}</b>`);
-      speak(`Game started! I start with ${startWord}. Your letter is ${currentLastLetter}.`);
+      speak(`Game started! I start with ${startWord}. Your letter is ${currentLastLetter}. Tap the blue button to speak.`);
     }
 
     function processPlayerTurn(word) {
       if (!isGameActive) return;
 
       if (word.charAt(0) !== currentLastLetter) {
-        speak(`No, ${word} does not start with ${currentLastLetter}. Try again.`);
+        speak(`${word} does not start with ${currentLastLetter}. Tap button to try again.`);
         return;
       }
 
       if (usedWords.has(word)) {
-        speak(`${word} was already used. Try another word.`);
+        speak(`${word} was already used. Tap button to try another word.`);
         return;
       }
 
@@ -209,9 +209,9 @@
 
     function endGame(message) {
       isGameActive = false;
+      document.getElementById('talkBtn').style.display = 'none';
       document.getElementById('status').innerText = message;
       speak(message);
-      try { recognition.stop(); } catch(e) {}
     }
   </script>
 </body>
