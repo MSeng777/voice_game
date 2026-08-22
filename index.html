@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Saturday in USJ</title>
+  <title>USJ 21</title>
   <style>
-    body { font-family: sans-serif; text-align: center; margin-top: 30px; background: #f4f4f9; padding: 15px; }
-    #status { font-weight: bold; margin: 20px; font-size: 1.2rem; color: #333; }
+    body { font-family: sans-serif; text-align: center; margin-top: 20px; background: #f4f4f9; padding: 15px; }
+    #status { font-weight: bold; margin: 15px; font-size: 1.2rem; color: #007bff; min-height: 30px; }
     #round { font-size: 1rem; color: #666; margin-bottom: 10px; }
     #log { max-width: 100%; margin: auto; text-align: left; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto; }
-    button { padding: 15px 30px; font-size: 1.2rem; cursor: pointer; border: none; background: #007bff; color: white; border-radius: 8px; width: 100%; max-width: 300px; }
+    button { padding: 15px 30px; font-size: 1.2rem; cursor: pointer; border: none; background: #28a745; color: white; border-radius: 8px; width: 100%; max-width: 300px; margin-bottom: 10px; }
   </style>
 </head>
 <body>
 
-  <h1>Saturday in USJ</h1>
+  <h1>USJ21</h1>
   <div id="round">Round: 0 / 10</div>
   <button id="startBtn" onclick="startGame()">Start Game</button>
   <div id="status">Tap "Start Game" to begin.</div>
@@ -22,26 +22,26 @@
 
   <script>
     const dictionary = {
-      'a': ['apple', 'ant', 'anchor', 'airplane'],
-      'b': ['bear', 'ball', 'banana', 'boat'],
-      'c': ['cat', 'car', 'cake', 'cup'],
-      'd': ['dog', 'duck', 'door', 'drum'],
+      'a': ['apple', 'ant', 'anchor', 'airplane', 'alligator'],
+      'b': ['bear', 'ball', 'banana', 'boat', 'butterfly'],
+      'c': ['cat', 'car', 'cake', 'cup', 'camel'],
+      'd': ['dog', 'duck', 'door', 'drum', 'dolphin'],
       'e': ['elephant', 'eagle', 'egg', 'engine'],
-      'f': ['fish', 'frog', 'fox', 'flag'],
-      'g': ['giraffe', 'gold', 'goose', 'grape'],
-      'h': ['horse', 'hat', 'house', 'hammer'],
-      'i': ['ice', 'igloo', 'island'],
-      'k': ['kite', 'king', 'koala'],
-      'l': ['lion', 'leaf', 'lemon'],
-      'm': ['monkey', 'moon', 'mouse'],
+      'f': ['fish', 'frog', 'fox', 'flag', 'forest'],
+      'g': ['giraffe', 'gold', 'goose', 'grape', 'guitar'],
+      'h': ['horse', 'hat', 'house', 'hammer', 'hippo'],
+      'i': ['ice', 'igloo', 'island', 'iron'],
+      'k': ['kite', 'king', 'koala', 'kangaroo'],
+      'l': ['lion', 'leaf', 'lemon', 'lizard'],
+      'm': ['monkey', 'moon', 'mouse', 'mountain'],
       'n': ['nest', 'night', 'needle', 'nut'],
-      'o': ['owl', 'orange', 'octopus'],
-      'p': ['panda', 'pen', 'pizza'],
-      'r': ['rabbit', 'robot', 'ring'],
-      's': ['snake', 'sun', 'star'],
-      't': ['tiger', 'ten', 'tree', 'turtle'],
+      'o': ['owl', 'orange', 'octopus', 'ocean'],
+      'p': ['panda', 'pen', 'pizza', 'penguin'],
+      'r': ['rabbit', 'robot', 'ring', 'rocket'],
+      's': ['snake', 'sun', 'star', 'spider'],
+      't': ['tiger', 'ten', 'tree', 'turtle', 'train'],
       'u': ['umbrella', 'unicorn'],
-      'w': ['whale', 'wolf', 'window'],
+      'w': ['whale', 'wolf', 'window', 'water'],
       'y': ['yak', 'yellow']
     };
 
@@ -60,50 +60,55 @@
     if (SpeechRecognition) {
       recognition = new SpeechRecognition();
       recognition.lang = 'en-US';
-      recognition.continuous = false; // Works more reliably across mobile browsers
+      recognition.continuous = false;
       recognition.interimResults = false;
 
       recognition.onresult = (event) => {
         if (!isGameActive) return;
-        const spokenWord = event.results[0][0].transcript.toLowerCase().trim().replace(/[^a-z]/g, '');
+        
+        // Grab the most confident spoken phrase
+        const rawTranscript = event.results[0][0].transcript.toLowerCase().trim();
+        // Take only the last spoken word if background noise added extra sounds
+        const wordsArray = rawTranscript.split(" ");
+        const spokenWord = wordsArray[wordsArray.length - 1].replace(/[^a-z]/g, '');
+
         if (spokenWord) {
-          document.getElementById('status').innerText = `You said: "${spokenWord}"`;
+          document.getElementById('status').innerText = `I heard: "${spokenWord}"`;
           processPlayerTurn(spokenWord);
         }
       };
 
       recognition.onerror = (event) => {
         if (isGameActive && event.error !== 'no-speech') {
-          document.getElementById('status').innerText = "Listening... speak now!";
-          setTimeout(startListening, 1000);
+          document.getElementById('status').innerText = "Listening... speak clearly!";
+          setTimeout(startListening, 1200);
         }
       };
 
       recognition.onend = () => {
-        // Automatically restart listening if game is active and computer is not talking
         if (isGameActive && !synth.speaking) {
           startListening();
         }
       };
     } else {
-      alert("Speech recognition is not supported on this mobile browser. Try Chrome on Android or Safari on iOS.");
+      alert("Speech recognition is not supported on this browser.");
     }
 
     function startListening() {
       try {
         recognition.start();
-        document.getElementById('status').innerText = "Listening... Speak your word!";
+        document.getElementById('status').innerText = "🎤 Listening... Say your word!";
       } catch(e) {}
     }
 
     function speak(text, callback) {
-      try { recognition.stop(); } catch(e) {} // Pause listening while speaking
+      try { recognition.stop(); } catch(e) {}
       synth.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.onend = () => {
         if (callback) callback();
-        if (isGameActive) startListening(); // Resume listening after speaking stops
+        if (isGameActive) startListening();
       };
       synth.speak(utterance);
     }
@@ -118,6 +123,13 @@
       document.getElementById('round').innerText = `Turn: ${totalTurns} / ${MAX_TURNS}`;
     }
 
+    function getRandomStartWord() {
+      const keys = Object.keys(dictionary);
+      const randomKey = keys[Math.floor(Math.random() * keys.length)];
+      const words = dictionary[randomKey];
+      return words[Math.floor(Math.random() * words.length)];
+    }
+
     function startGame() {
       usedWords.clear();
       totalTurns = 0;
@@ -127,7 +139,8 @@
       
       document.getElementById('log').innerHTML = '';
       
-      const startWord = "elephant";
+      // Select random starting word
+      const startWord = getRandomStartWord();
       usedWords.add(startWord);
       currentLastLetter = startWord.slice(-1);
       totalTurns++;
@@ -147,7 +160,7 @@
       }
 
       if (usedWords.has(word)) {
-        speak(`${word} was already used. Try a different word.`);
+        speak(`${word} was already used. Try another word.`);
         return;
       }
 
@@ -179,7 +192,7 @@
       log(`Computer (${totalTurns}): <b>${computerResponse}</b>`);
 
       if (checkGameOver()) {
-        speak(`My word is ${computerResponse}. That reaches 10 turns.`);
+        speak(`My word is ${computerResponse}. Game finished!`);
       } else {
         speak(`${computerResponse}. Your letter is ${currentLastLetter}.`);
       }
